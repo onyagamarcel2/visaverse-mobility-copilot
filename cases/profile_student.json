@@ -1,0 +1,12 @@
+{
+  "origin_country": "CM",
+  "destination_country": "FR",
+  "purpose": "STUDY",
+  "planned_departure_date": "2024-09-01",
+  "duration_months": 24,
+  "passport_expiry_date": "2026-01-15",
+  "has_sponsor": true,
+  "proof_of_funds_level": "LOW",
+  "language": "FR",
+  "notes": "Accepted to master's program in Lyon"
+}
