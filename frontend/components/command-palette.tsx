@@ -23,6 +23,14 @@ export function CommandPalette() {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const router = useRouter()
 
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    setOpen(nextOpen)
+    if (!nextOpen) {
+      setSearch("")
+      setSelectedIndex(0)
+    }
+  }, [])
+
   const commands: Command[] = [
     {
       id: "home",
@@ -164,15 +172,8 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [handleKeyDown])
 
-  useEffect(() => {
-    if (!open) {
-      setSearch("")
-      setSelectedIndex(0)
-    }
-  }, [open])
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl p-0 gap-0">
         <DialogHeader className="px-4 pt-4 pb-0">
           <DialogTitle className="sr-only">Command Palette</DialogTitle>

@@ -57,7 +57,7 @@ export default function ChatPage() {
         // User hasn't completed onboarding
       }
     }
-  }, [])
+  }, [messages.length])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })

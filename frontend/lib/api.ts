@@ -60,7 +60,7 @@ class APIClient {
 
   constructor() {
     // Use environment variable or default to localhost
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+    this.baseURL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"
   }
 
   async generatePlan(profileData: ProfileData): Promise<PlanResponse> {

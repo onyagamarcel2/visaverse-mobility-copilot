@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useId, useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -27,9 +27,10 @@ export function SharePlanDialog({ open, onOpenChange }: SharePlanDialogProps) {
   const [password, setPassword] = useState("")
   const [email, setEmail] = useState("")
   const { toast } = useToast()
+  const linkId = useId().replace(/:/g, "")
 
   // Generate a mock shareable link
-  const shareableLink = `https://visaverse.app/shared/${Math.random().toString(36).substring(7)}`
+  const shareableLink = `https://visaverse.app/shared/${linkId}`
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareableLink)

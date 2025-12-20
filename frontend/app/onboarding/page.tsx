@@ -12,7 +12,7 @@ export default function OnboardingPage() {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-semibold text-foreground mb-3">Build Your Mobility Plan</h1>
             <p className="text-lg text-muted-foreground">
-              Tell us about your journey and we'll create a personalized plan for you.
+              Tell us about your journey and we will create a personalized plan for you.
             </p>
           </div>
 
@@ -49,7 +49,7 @@ export default function OnboardingPage() {
               </div>
 
               <div className="bg-card border border-border rounded-2xl p-6">
-                <h3 className="font-semibold text-foreground mb-3">What You'll Get</h3>
+                <h3 className="font-semibold text-foreground mb-3">What You Will Get</h3>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex gap-2">
                     <span className="text-success">✓</span>
