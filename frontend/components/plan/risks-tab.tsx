@@ -75,7 +75,7 @@ export function RisksTab() {
           <div>
             <h3 className="font-semibold text-foreground mb-2">Risk Assessment</h3>
             <p className="text-sm text-muted-foreground">
-              We've identified potential challenges based on your profile. Review these risks and follow the mitigation
+              We have identified potential challenges based on your profile. Review these risks and follow the mitigation
               strategies to improve your chances of success.
             </p>
           </div>

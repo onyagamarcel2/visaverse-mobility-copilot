@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -18,33 +18,32 @@ interface Notification {
   type: "info" | "warning" | "success"
 }
 
-export function NotificationCenter() {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: "1",
-      title: "Welcome to VisaVerse",
-      message: "Your personalized visa plan is ready to review",
-      timestamp: new Date(),
-      read: false,
-      type: "info",
-    },
-    {
-      id: "2",
-      title: "Deadline Approaching",
-      message: "Document submission deadline in 3 days",
-      timestamp: new Date(Date.now() - 60000),
-      read: false,
-      type: "warning",
-    },
-  ])
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
-  const { toast } = useToast()
+const defaultNotificationTimestamp = new Date("2024-01-01T00:00:00Z")
+const defaultNotifications: Notification[] = [
+  {
+    id: "1",
+    title: "Welcome to VisaVerse",
+    message: "Your personalized visa plan is ready to review",
+    timestamp: defaultNotificationTimestamp,
+    read: false,
+    type: "info",
+  },
+  {
+    id: "2",
+    title: "Deadline Approaching",
+    message: "Document submission deadline in 3 days",
+    timestamp: new Date(defaultNotificationTimestamp.getTime() - 60000),
+    read: false,
+    type: "warning",
+  },
+]
 
-  useEffect(() => {
-    if ("Notification" in window) {
-      setNotificationsEnabled(Notification.permission === "granted")
-    }
-  }, [])
+export function NotificationCenter() {
+  const [notifications, setNotifications] = useState<Notification[]>(defaultNotifications)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted",
+  )
+  const { toast } = useToast()
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
@@ -55,7 +54,7 @@ export function NotificationCenter() {
     if (granted) {
       toast({
         title: "Notifications enabled",
-        description: "You'll receive important deadline reminders",
+        description: "You will receive important deadline reminders",
       })
     } else {
       toast({

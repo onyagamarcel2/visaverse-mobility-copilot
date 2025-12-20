@@ -30,12 +30,20 @@ uvicorn app.main:app --reload --port 8000
 ### Frontend
 ```bash
 cd frontend
-npm install
+pnpm install
 cp .env.example .env.local
-npm run dev
+pnpm dev
 ```
 
 The frontend expects the backend at `http://localhost:8000` by default.
+
+Local fonts are self-hosted via [`@fontsource-variable/inter`](https://fontsource.org/fonts/inter) to ensure builds work without outbound network access. Common commands:
+
+```bash
+pnpm lint
+pnpm build
+pnpm dev
+```
 
 ### Docker Compose (optional)
 ```bash
