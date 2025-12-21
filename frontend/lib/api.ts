@@ -50,9 +50,10 @@ export interface PlanResponse {
   }>
 }
 
-export interface ChatMessage {
-  role: "user" | "assistant"
-  content: string
+export interface ChatRequest {
+  message: string
+  profile?: ProfileData
+  history?: Array<{ role: "user" | "assistant"; content: string }>
 }
 
 class APIClient {
@@ -85,26 +86,43 @@ class APIClient {
     }
   }
 
-  async sendChatMessage(message: string, context?: ProfileData): Promise<string> {
+  async sendChatMessage(payload: ChatRequest): Promise<string> {
+    const response = await fetch(`${this.baseURL}/api/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: payload.message,
+        context: payload.profile,
+        history: payload.history,
+      }),
+    })
+
+    let data: any
+
     try {
-      const response = await fetch(`${this.baseURL}/api/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message, context }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`)
-      }
-
-      const data = await response.json()
-      return data.response
+      data = await response.json()
     } catch (error) {
-      console.error("Error sending chat message:", error)
-      return "I'm having trouble connecting to the server. Please try again later."
+      // Ignore JSON parse errors; they will be handled by the ok check below
+      console.error("Error parsing chat response:", error)
     }
+
+    if (!response.ok) {
+      const errorMessage =
+        data?.error?.message ||
+        data?.message ||
+        data?.error ||
+        `API error: ${response.status}`
+
+      throw new Error(errorMessage)
+    }
+
+    if (!data?.response) {
+      throw new Error("Unexpected response from the chat service.")
+    }
+
+    return data.response as string
   }
 
   // Mock data for development/testing

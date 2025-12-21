@@ -2,62 +2,64 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Navbar } from "@/components/navbar"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
-import { ChatBubble } from "@/components/chat/chat-bubble"
-import { TypingIndicator } from "@/components/chat/typing-indicator"
-import { SuggestedPrompts } from "@/components/chat/suggested-prompts"
-import { EmptyState } from "@/components/empty-state"
-import { Send, Trash2, MessageSquare } from "lucide-react"
-import { apiClient } from "@/lib/api"
+import { AlertCircle, MessageSquare, Send, Trash2 } from "lucide-react"
 
-interface Message {
-  role: "user" | "assistant"
-  content: string
-  timestamp: string
-}
+import { SuggestedPrompts } from "@/components/chat/suggested-prompts"
+import { TypingIndicator } from "@/components/chat/typing-indicator"
+import { ChatBubble } from "@/components/chat/chat-bubble"
+import { Navbar } from "@/components/navbar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/hooks/use-toast"
+import { apiClient } from "@/lib/api"
+import { useAppStore } from "@/lib/store"
+
+const HISTORY_REQUEST_LIMIT = 12
 
 export default function ChatPage() {
   const router = useRouter()
-  const [messages, setMessages] = useState<Message[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("visaverse_chat_history")
-      if (saved) {
-        return JSON.parse(saved)
-      }
-      const hasProfile = localStorage.getItem("visaverse_profile")
-      if (!hasProfile) {
-        return []
-      }
-    }
-    return [
-      {
-        role: "assistant",
-        content:
-          "Hello! I'm your VisaVerse assistant. I can help answer questions about your visa application, required documents, and travel planning. How can I help you today?",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      },
-    ]
-  })
+  const { toast } = useToast()
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const [hasProfile, setHasProfile] = useState(false)
+  const {
+    profile,
+    chatHistory,
+    appendUserMessage,
+    appendAssistantMessage,
+    clearChat,
+    hydrateFromStorage,
+    chatError,
+    setChatError,
+    lastFailedMessage,
+    setLastFailedMessage,
+    retryAvailableAt,
+    setRetryAvailableAt,
+    isHydrated,
+  } = useAppStore((state) => ({
+    profile: state.profile,
+    chatHistory: state.chatHistory,
+    appendUserMessage: state.appendUserMessage,
+    appendAssistantMessage: state.appendAssistantMessage,
+    clearChat: state.clearChat,
+    hydrateFromStorage: state.hydrateFromStorage,
+    chatError: state.chatError,
+    setChatError: state.setChatError,
+    lastFailedMessage: state.lastFailedMessage,
+    setLastFailedMessage: state.setLastFailedMessage,
+    retryAvailableAt: state.retryAvailableAt,
+    setRetryAvailableAt: state.setRetryAvailableAt,
+    isHydrated: state.isHydrated,
+  }))
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const profile = localStorage.getItem("visaverse_profile")
-      setHasProfile(!!profile)
-      if (!profile && messages.length === 0) {
-        // User hasn't completed onboarding
-      }
-    }
-  }, [messages.length])
+    hydrateFromStorage()
+  }, [hydrateFromStorage])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -65,51 +67,43 @@ export default function ChatPage() {
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages, isTyping])
+  }, [chatHistory, isTyping])
 
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem("visaverse_chat_history", JSON.stringify(messages))
-    }
-  }, [messages])
+  const handleSend = async (overrideMessage?: string) => {
+    const messageToSend = (overrideMessage ?? input).trim()
+    if (!messageToSend || isTyping || !profile) return
 
-  const handleSend = async () => {
-    if (!input.trim()) return
-
-    const userMessage: Message = {
-      role: "user",
-      content: input,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    }
-    setMessages((prev) => [...prev, userMessage])
+    const userMessage = appendUserMessage(messageToSend)
     setInput("")
     setIsTyping(true)
+    setChatError(null)
+
+    const historyForRequest = [...chatHistory, userMessage]
+      .slice(-HISTORY_REQUEST_LIMIT)
+      .map(({ role, content }) => ({ role, content }))
 
     try {
-      // Get profile from localStorage if available
-      const profileData = localStorage.getItem("visaverse_profile")
-      const context = profileData ? JSON.parse(profileData) : undefined
+      const response = await apiClient.sendChatMessage({
+        message: messageToSend,
+        profile,
+        history: historyForRequest,
+      })
 
-      const response = await apiClient.sendChatMessage(input, context)
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: response,
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-      ])
+      appendAssistantMessage(response)
+      setLastFailedMessage(null)
+      setRetryAvailableAt(0)
     } catch (error) {
-      console.error("Error sending message:", error)
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment.",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-      ])
+      const errorMessage =
+        error instanceof Error ? error.message : "Unable to send message. Please try again."
+      setChatError(errorMessage)
+      setLastFailedMessage(messageToSend)
+      setRetryAvailableAt(Date.now() + 1000)
+
+      toast({
+        title: "Message failed",
+        description: errorMessage,
+        variant: "destructive",
+      })
     } finally {
       setIsTyping(false)
     }
@@ -118,7 +112,7 @@ export default function ChatPage() {
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      handleSend()
+      void handleSend()
     }
   }
 
@@ -127,28 +121,46 @@ export default function ChatPage() {
   }
 
   const handleClearChat = () => {
-    const initialMessage: Message = {
-      role: "assistant",
-      content:
-        "Hello! I'm your VisaVerse assistant. I can help answer questions about your visa application, required documents, and travel planning. How can I help you today?",
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    }
-    setMessages([initialMessage])
-    localStorage.removeItem("visaverse_chat_history")
+    clearChat()
+    setChatError(null)
   }
 
-  if (!hasProfile) {
+  const handleRetry = () => {
+    if (!lastFailedMessage) return
+    if (retryAvailableAt > Date.now()) return
+
+    void handleSend(lastFailedMessage)
+  }
+
+  const hasUserMessages = chatHistory.some((message) => message.role === "user")
+  const isRetryCoolingDown = retryAvailableAt > Date.now()
+
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <div className="flex-1 pt-24 pb-6 px-6 flex items-center justify-center text-muted-foreground">
+          Loading your chat experience...
+        </div>
+      </div>
+    )
+  }
+
+  if (!profile) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
         <div className="flex-1 pt-24 pb-6 px-6 flex items-center justify-center">
-          <EmptyState
-            icon={MessageSquare}
-            title="Complete Your Profile First"
-            description="To get personalized assistance from your AI copilot, please complete your onboarding profile first."
-            actionLabel="Start Onboarding"
-            onAction={() => router.push("/onboarding")}
-          />
+          <Card className="max-w-lg w-full p-8 space-y-4 text-center">
+            <MessageSquare className="w-10 h-10 mx-auto text-primary" />
+            <h2 className="text-2xl font-semibold">Complete Your Profile First</h2>
+            <p className="text-muted-foreground">
+              To get personalized assistance from your AI copilot, please complete your onboarding profile first.
+            </p>
+            <Button onClick={() => router.push("/onboarding")} className="w-full">
+              Go to Onboarding
+            </Button>
+          </Card>
         </div>
       </div>
     )
@@ -165,7 +177,7 @@ export default function ChatPage() {
               <h1 className="text-3xl font-semibold text-foreground">Ask Your Copilot</h1>
               <p className="text-muted-foreground mt-2">Get instant answers to your visa and relocation questions.</p>
             </div>
-            {messages.length > 1 && (
+            {chatHistory.length > 1 && (
               <Button variant="outline" size="sm" onClick={handleClearChat} className="gap-2 bg-transparent">
                 <Trash2 className="w-4 h-4" />
                 Clear Chat
@@ -176,8 +188,8 @@ export default function ChatPage() {
           {/* Messages Container */}
           <Card className="flex-1 flex flex-col border-border overflow-hidden">
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {messages.map((message, index) => (
-                <ChatBubble key={index} role={message.role} content={message.content} timestamp={message.timestamp} />
+              {chatHistory.map((message, index) => (
+                <ChatBubble key={`${message.timestamp}-${index}`} role={message.role} content={message.content} timestamp={message.timestamp} />
               ))}
 
               {isTyping && <TypingIndicator />}
@@ -185,7 +197,7 @@ export default function ChatPage() {
               <div ref={messagesEndRef} />
 
               {/* Show suggested prompts if no user messages yet */}
-              {messages.length === 1 && (
+              {!hasUserMessages && (
                 <div className="pt-4">
                   <SuggestedPrompts onSelectPrompt={handlePromptSelect} />
                 </div>
@@ -193,7 +205,27 @@ export default function ChatPage() {
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-border p-4">
+            <div className="border-t border-border p-4 space-y-3">
+              {chatError && (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <Badge variant="destructive" className="gap-2">
+                    <AlertCircle className="w-3 h-3" />
+                    {chatError}
+                  </Badge>
+                  {lastFailedMessage && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRetry}
+                      disabled={isTyping || isRetryCoolingDown}
+                      className="self-start sm:self-auto"
+                    >
+                      Retry
+                    </Button>
+                  )}
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Input
                   value={input}
@@ -204,7 +236,7 @@ export default function ChatPage() {
                   disabled={isTyping}
                 />
                 <Button
-                  onClick={handleSend}
+                  onClick={() => void handleSend()}
                   disabled={!input.trim() || isTyping}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
