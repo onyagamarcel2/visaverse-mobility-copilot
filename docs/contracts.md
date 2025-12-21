@@ -27,3 +27,13 @@
 - `scripts/dev-smoke.sh` covers backend and BFF health/plan/chat flows with representative payloads.
 - `frontend/scripts/smoke-plan.mjs` asserts the UI plan response shape from the BFF.
 - `backend/tests/test_api.py` validates canonical endpoints in mock mode to guard against regressions.
+
+## 6. Admin API (control plane)
+- Prefix: `/admin/api/*` exposed by FastAPI, consumed by `admin-frontend`.
+- Auth: bearer token (`Authorization: Bearer <jwt>`) issued by `/admin/api/auth/login` with roles claim.
+- KB workflow:
+  - `POST /admin/api/kb` → create draft document + version.
+  - `POST /admin/api/kb/{id}/submit` → mark draft as `review`.
+  - `POST /admin/api/kb/{id}/publish` → publish latest version and capture audit hashes.
+- Users: `POST /admin/api/users` (admin only) seeds operators; first login bootstrap supported for demos.
+- Observability: `GET /admin/api/audit` (latest events) and `GET /admin/api/metrics` (counts for UI dashboards).

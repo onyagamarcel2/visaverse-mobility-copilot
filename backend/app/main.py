@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .chat_service import generate_chat_response
 from .plan_service import build_plan
+from .admin_api import router as admin_router
 from .schemas import (
     ChatIn,
     ChatOut,
@@ -22,6 +23,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(admin_router)
 
 
 @app.get("/api/health")

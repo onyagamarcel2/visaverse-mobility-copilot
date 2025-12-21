@@ -130,3 +130,36 @@ class ErrorDetail(BaseModel):
 
 class ErrorEnvelope(BaseModel):
     error: ErrorDetail
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    role: Optional[str] = None
+
+
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    organization_id: Optional[int] = None
+
+
+class UserOut(BaseModel):
+    id: int
+    email: str
+    organization_id: Optional[int]
+    roles: list[str] = Field(default_factory=list)
+
+
+class KbVersionOut(BaseModel):
+    id: int
+    version: int
+    status: str
+    content: str
+
+
+class KbDocumentOut(BaseModel):
+    id: int
+    title: str
+    status: str
+    versions: list[KbVersionOut] = Field(default_factory=list)
