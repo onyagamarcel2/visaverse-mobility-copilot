@@ -1,39 +1,46 @@
 import { NextResponse } from "next/server"
+
 import type { ProfileData } from "@/lib/api"
+import { toBackendProfile, toUiPlan } from "@/lib/bff-mappers"
+import type { BackendPlanOut } from "@/lib/bff-mappers"
+
+const normalizeBaseUrl = (url?: string | null) => {
+  if (!url) return null
+  return url.replace(/\/+$/, "")
+}
+
+const FASTAPI_BASE_URL =
+  normalizeBaseUrl(process.env.FASTAPI_BASE_URL) ??
+  normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL) ??
+  "http://localhost:8000"
 
 export async function POST(request: Request) {
   try {
     const profileData: ProfileData = await request.json()
+    const backendPayload = toBackendProfile(profileData)
 
-    // Here you would normally call your FastAPI backend
-    // For now, return mock data
-
-    const mockResponse = {
-      summary: {
-        confidence: 0.87,
-        estimatedWeeks: 8,
-        totalDocuments: 12,
-        totalTasks: 8,
+    const response = await fetch(`${FASTAPI_BASE_URL}/api/plan`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-      timeline: [
-        {
-          title: "Initial Document Gathering",
-          date: "Week 1-2",
-          status: "pending",
-          description: "Collect passport, photos, and personal identification documents",
-        },
-      ],
-      checklist: [],
-      documents: [],
-      risks: [],
+      body: JSON.stringify(backendPayload),
+    })
+
+    const plan = (await response.json()) as BackendPlanOut | { error?: { code?: string; message?: string } }
+
+    if (!response.ok) {
+      const error = plan?.error ?? { code: "PLAN_BACKEND_ERROR", message: "Failed to generate plan" }
+      return NextResponse.json({ error }, { status: response.status })
     }
 
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    return NextResponse.json(mockResponse)
+    const uiPlan = toUiPlan(plan as BackendPlanOut, profileData)
+    return NextResponse.json(uiPlan)
   } catch (error) {
     console.error("Error processing plan request:", error)
-    return NextResponse.json({ error: "Failed to generate plan" }, { status: 500 })
+    return NextResponse.json(
+      { error: { code: "PLAN_PROXY_ERROR", message: "Failed to generate plan" } },
+      { status: 500 },
+    )
   }
 }

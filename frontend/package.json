@@ -5,7 +5,7 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
-    "lint": "next lint || pnpm exec eslint .",
+    "lint": "eslint --ext .ts,.tsx,.js,.jsx --max-warnings 0 .",
     "start": "next start"
   },
   "dependencies": {

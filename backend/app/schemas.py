@@ -1,6 +1,6 @@
 from datetime import date
 from enum import Enum
-from typing import List, Optional
+from typing import Any, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -103,3 +103,30 @@ class PlanOut(BaseModel):
     risks: List[RiskItem]
     sources: List[SourceRef]
     generated_at: str
+
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant", "system"] = "user"
+    content: str
+
+
+class ChatIn(BaseModel):
+    message: str
+    profile: Optional[ProfileIn] = None
+    history: List[ChatMessage] = Field(default_factory=list)
+
+
+class ChatOut(BaseModel):
+    answer: str
+    sources: List[SourceRef] = Field(default_factory=list)
+    suggested_questions: List[str] = Field(default_factory=list)
+
+
+class ErrorDetail(BaseModel):
+    code: str
+    message: str
+    details: Optional[Any] = None
+
+
+class ErrorEnvelope(BaseModel):
+    error: ErrorDetail

@@ -1,0 +1,4 @@
+
+> my-v0-project@0.1.0 lint /Users/ocm01/Desktop/projets/visa-verse mobility copilote/frontend
+> eslint --ext .ts,.tsx,.js,.jsx --max-warnings 0 .
+

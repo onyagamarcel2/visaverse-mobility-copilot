@@ -1,10 +1,9 @@
-import nextConfig from "eslint-config-next"
+/* eslint-disable import/no-anonymous-default-export */
+import next from "eslint-config-next"
 
-const config = [
-  ...nextConfig,
+export default [
   {
     ignores: ["node_modules", ".next", "out", "dist", "coverage"],
   },
+  ...next,
 ]
-
-export default config

@@ -1,0 +1,6 @@
+10.26.1
+v20.19.6
+
+> my-v0-project@0.1.0 lint /Users/ocm01/Desktop/projets/visa-verse mobility copilote/frontend
+> next lint || pnpm exec eslint .
+

@@ -2,6 +2,11 @@
 
 FastAPI service that generates visa preparation plans with strict JSON outputs.
 
+## Endpoints
+- `GET /api/health` – readiness probe.
+- `POST /api/plan` – accepts `ProfileIn` payload and returns canonical `PlanOut`.
+- `POST /api/chat` – accepts `ChatIn` (message + optional profile/history) and returns `ChatOut` with suggested follow-up questions. Respects `MOCK_MODE` and the knowledge base snippets for grounding.
+
 ## Setup
 1. Create a virtual environment and activate it.
 2. Install dependencies:
@@ -24,3 +29,12 @@ FastAPI service that generates visa preparation plans with strict JSON outputs.
 - `ALLOWED_ORIGINS`: comma-separated origins for CORS (default `http://localhost:3000`).
 - `PORT`: port for running uvicorn (default 8000).
 - `MAX_SNIPPETS`: number of KB snippets to attach to the plan (default 5).
+
+## Tests
+Install dev dependencies via `pip install -r requirements.txt` (includes `pytest`) and run:
+
+```bash
+pytest
+```
+
+The suite exercises `/api/health`, `/api/plan`, and `/api/chat` in mock mode to prevent accidental LLM calls.

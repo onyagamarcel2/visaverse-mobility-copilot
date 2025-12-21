@@ -35,7 +35,7 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-The frontend expects the backend at `http://localhost:8000` by default.
+By default the browser calls the local Next.js server (`http://localhost:3000`). The Next API routes (`/api/plan`, `/api/chat`) proxy requests to FastAPI using `FASTAPI_BASE_URL`, so backend credentials never leak to the browser.
 
 Local fonts are self-hosted via [`@fontsource-variable/inter`](https://fontsource.org/fonts/inter) to ensure builds work without outbound network access. Common commands:
 
@@ -49,11 +49,13 @@ pnpm dev
 ```bash
 docker-compose up --build
 ```
-Backend is exposed on `8000`, frontend on `3000`.
+Backend is exposed on `8000`, frontend on `3000`. The compose file injects both `NEXT_PUBLIC_API_BASE_URL` (browser) and `FASTAPI_BASE_URL` (Next server) automatically.
 
 ## Environment variables
-- Backend: see `backend/.env.example` for `MOCK_MODE`, `OPENAI_API_KEY`, `ALLOWED_ORIGINS`, etc.
-- Frontend: set `NEXT_PUBLIC_API_BASE_URL` (defaults to `http://localhost:8000`).
+- Backend: see `backend/.env.example` for `MOCK_MODE`, `OPENAI_API_KEY`, `ALLOWED_ORIGINS`, etc. New `/api/chat` endpoint respects the same mock/LLM switches.
+- Frontend: copy `frontend/.env.example` and set:
+  - `NEXT_PUBLIC_API_BASE_URL` → where the browser should call the Next.js BFF (usually `http://localhost:3000`).
+  - `FASTAPI_BASE_URL` → internal URL the Next.js API routes use to contact FastAPI (usually `http://localhost:8000` locally or `http://backend:8000` in Docker).
 
 ## Sample request
 ```bash
@@ -61,6 +63,11 @@ curl -X POST http://localhost:8000/api/plan \
   -H "Content-Type: application/json" \
   -d @cases/profile_student.json
 ```
+
+## Smoke testing
+- `scripts/frontend-check.sh` – runs `pnpm lint` + `pnpm build`.
+- `frontend/scripts/smoke-plan.mjs` – posts a sample profile to `http://localhost:3000/api/plan` and asserts summary fields.
+- `scripts/dev-smoke.sh` – exercises backend `/api/health`, `/api/plan`, `/api/chat` plus the corresponding Next.js BFF endpoints (requires `curl` + `jq`).
 
 ## Adding RAG later
 Replace `backend/app/kb.py` retrieval logic with a vector store client (e.g., Chroma) while keeping the `retrieve_snippets` interface.

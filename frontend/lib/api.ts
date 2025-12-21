@@ -59,8 +59,8 @@ class APIClient {
   private baseURL: string
 
   constructor() {
-    // Use environment variable or default to localhost
-    this.baseURL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"
+    // Use environment variable or default to Next.js dev server
+    this.baseURL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000"
   }
 
   async generatePlan(profileData: ProfileData): Promise<PlanResponse> {
