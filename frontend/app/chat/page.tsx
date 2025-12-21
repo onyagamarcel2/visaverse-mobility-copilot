@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api"
+import { useI18n } from "@/lib/i18n"
 import { useAppStore } from "@/lib/store"
 
 const HISTORY_REQUEST_LIMIT = 12
@@ -23,6 +24,8 @@ const HISTORY_REQUEST_LIMIT = 12
 export default function ChatPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { t, messages: i18nMessages } = useI18n()
+
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -61,6 +64,16 @@ export default function ChatPage() {
     hydrateFromStorage()
   }, [hydrateFromStorage])
 
+  // Ensure an initial assistant message exists once we have a profile and are hydrated.
+  useEffect(() => {
+    if (!isHydrated) return
+    if (!profile) return
+    if (chatHistory.length > 0) return
+    if (i18nMessages?.chat?.initialMessage) {
+      appendAssistantMessage(i18nMessages.chat.initialMessage)
+    }
+  }, [isHydrated, profile, chatHistory.length, appendAssistantMessage, i18nMessages])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
@@ -93,14 +106,16 @@ export default function ChatPage() {
       setLastFailedMessage(null)
       setRetryAvailableAt(0)
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unable to send message. Please try again."
+      const fallback =
+        i18nMessages?.chat?.retryError ?? "Unable to send message. Please try again."
+      const errorMessage = error instanceof Error ? error.message : fallback
+
       setChatError(errorMessage)
       setLastFailedMessage(messageToSend)
       setRetryAvailableAt(Date.now() + 1000)
 
       toast({
-        title: "Message failed",
+        title: i18nMessages?.chat?.messageFailedTitle ?? "Message failed",
         description: errorMessage,
         variant: "destructive",
       })
@@ -123,12 +138,13 @@ export default function ChatPage() {
   const handleClearChat = () => {
     clearChat()
     setChatError(null)
+    setLastFailedMessage(null)
+    setRetryAvailableAt(0)
   }
 
   const handleRetry = () => {
     if (!lastFailedMessage) return
     if (retryAvailableAt > Date.now()) return
-
     void handleSend(lastFailedMessage)
   }
 
@@ -140,7 +156,7 @@ export default function ChatPage() {
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
         <div className="flex-1 pt-24 pb-6 px-6 flex items-center justify-center text-muted-foreground">
-          Loading your chat experience...
+          {i18nMessages?.common?.loading ?? "Loading your chat experience..."}
         </div>
       </div>
     )
@@ -153,12 +169,14 @@ export default function ChatPage() {
         <div className="flex-1 pt-24 pb-6 px-6 flex items-center justify-center">
           <Card className="max-w-lg w-full p-8 space-y-4 text-center">
             <MessageSquare className="w-10 h-10 mx-auto text-primary" />
-            <h2 className="text-2xl font-semibold">Complete Your Profile First</h2>
+            <h2 className="text-2xl font-semibold">
+              {i18nMessages.chat.emptyTitle}
+            </h2>
             <p className="text-muted-foreground">
-              To get personalized assistance from your AI copilot, please complete your onboarding profile first.
+              {i18nMessages.chat.emptyDescription}
             </p>
             <Button onClick={() => router.push("/onboarding")} className="w-full">
-              Go to Onboarding
+              {i18nMessages.chat.emptyAction}
             </Button>
           </Card>
         </div>
@@ -174,13 +192,23 @@ export default function ChatPage() {
         <div className="max-w-4xl mx-auto h-full flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-semibold text-foreground">Ask Your Copilot</h1>
-              <p className="text-muted-foreground mt-2">Get instant answers to your visa and relocation questions.</p>
+              <h1 className="text-3xl font-semibold text-foreground">
+                {i18nMessages.chat.heroTitle}
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                {i18nMessages.chat.heroSubtitle}
+              </p>
             </div>
+
             {chatHistory.length > 1 && (
-              <Button variant="outline" size="sm" onClick={handleClearChat} className="gap-2 bg-transparent">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearChat}
+                className="gap-2 bg-transparent focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
+              >
                 <Trash2 className="w-4 h-4" />
-                Clear Chat
+                {t("common.clearChat")}
               </Button>
             )}
           </div>
@@ -189,7 +217,12 @@ export default function ChatPage() {
           <Card className="flex-1 flex flex-col border-border overflow-hidden">
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {chatHistory.map((message, index) => (
-                <ChatBubble key={`${message.timestamp}-${index}`} role={message.role} content={message.content} timestamp={message.timestamp} />
+                <ChatBubble
+                  key={`${message.timestamp}-${index}`}
+                  role={message.role}
+                  content={message.content}
+                  timestamp={message.timestamp}
+                />
               ))}
 
               {isTyping && <TypingIndicator />}
@@ -212,6 +245,7 @@ export default function ChatPage() {
                     <AlertCircle className="w-3 h-3" />
                     {chatError}
                   </Badge>
+
                   {lastFailedMessage && (
                     <Button
                       variant="outline"
@@ -220,7 +254,7 @@ export default function ChatPage() {
                       disabled={isTyping || isRetryCoolingDown}
                       className="self-start sm:self-auto"
                     >
-                      Retry
+                      {i18nMessages?.common?.retry ?? "Retry"}
                     </Button>
                   )}
                 </div>
@@ -231,19 +265,23 @@ export default function ChatPage() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Type your question..."
+                  placeholder={i18nMessages.chat.placeholder}
                   className="flex-1"
                   disabled={isTyping}
                 />
                 <Button
                   onClick={() => void handleSend()}
                   disabled={!input.trim() || isTyping}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  aria-label={i18nMessages.chat.placeholder}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
                 >
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Press Enter to send, Shift+Enter for new line</p>
+
+              <p className="text-xs text-muted-foreground mt-2">
+                {i18nMessages.chat.helper}
+              </p>
             </div>
           </Card>
         </div>

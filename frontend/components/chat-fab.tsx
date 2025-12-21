@@ -15,7 +15,8 @@ export function ChatFAB() {
       <Link href="/chat">
         <Button
           size="lg"
-          className="rounded-full h-14 w-14 shadow-lg bg-accent hover:bg-accent/90 text-white relative group"
+          aria-label="Open chat"
+          className="rounded-full h-14 w-14 shadow-lg bg-accent hover:bg-accent/90 text-white relative group focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
         >
           <MessageCircle className="w-6 h-6" />
           <span className="absolute right-full mr-3 px-3 py-1 bg-foreground text-background text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">

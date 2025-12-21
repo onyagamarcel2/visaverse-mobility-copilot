@@ -25,10 +25,12 @@ import { SharePlanDialog } from "@/components/share-plan-dialog"
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 import { Download, Edit, Share2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useI18n } from "@/lib/i18n"
 
 export default function PlanPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { t, messages } = useI18n()
   const [profile, setProfile] = useState<any>(null)
   const [activeTab, setActiveTab] = useState("summary")
   const [isLoading, setIsLoading] = useState(true)
@@ -81,11 +83,11 @@ export default function PlanPage() {
   }
 
   const tabs = [
-    { value: "summary", label: "Summary" },
-    { value: "timeline", label: "Timeline" },
-    { value: "checklist", label: "Checklist" },
-    { value: "documents", label: "Documents" },
-    { value: "risks", label: "Risks" },
+    { value: "summary", label: messages.plan.tabs.summary },
+    { value: "timeline", label: messages.plan.tabs.timeline },
+    { value: "checklist", label: messages.plan.tabs.checklist },
+    { value: "documents", label: messages.plan.tabs.documents },
+    { value: "risks", label: messages.plan.tabs.risks },
   ]
 
   return (
@@ -97,15 +99,15 @@ export default function PlanPage() {
           <Breadcrumb className="mb-6">
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                <BreadcrumbLink href="/">{messages.plan.breadcrumb.home}</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink href="/onboarding">Onboarding</BreadcrumbLink>
+                <BreadcrumbLink href="/onboarding">{messages.plan.breadcrumb.onboarding}</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Your Plan</BreadcrumbPage>
+                <BreadcrumbPage>{messages.plan.breadcrumb.current}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -113,8 +115,8 @@ export default function PlanPage() {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-4xl font-semibold text-foreground">Your Mobility Plan</h1>
-              <p className="text-muted-foreground mt-2">Personalized guidance for your journey</p>
+              <h1 className="text-4xl font-semibold text-foreground">{messages.plan.title}</h1>
+              <p className="text-muted-foreground mt-2">{messages.plan.subtitle}</p>
             </div>
             <div className="flex items-center gap-3">
               <Link href="/onboarding">
@@ -124,7 +126,7 @@ export default function PlanPage() {
                   className="gap-2 bg-transparent hover:scale-105 transition-transform"
                 >
                   <Edit className="w-4 h-4" />
-                  Edit Details
+                  {t("common.editDetails")}
                 </Button>
               </Link>
               <Button
@@ -134,7 +136,7 @@ export default function PlanPage() {
                 className="gap-2 bg-transparent hover:scale-105 transition-transform"
               >
                 <Share2 className="w-4 h-4" />
-                Share
+                {t("common.share")}
               </Button>
               <Button
                 onClick={handleExportPDF}
@@ -143,7 +145,7 @@ export default function PlanPage() {
                 className="gap-2 bg-transparent hover:scale-105 transition-transform"
               >
                 <Download className="w-4 h-4" />
-                Export PDF
+                {t("common.exportPdf")}
               </Button>
             </div>
           </div>
@@ -197,7 +199,7 @@ export default function PlanPage() {
               disabled={activeTab === tabs[0].value}
               className="bg-transparent hover:scale-105 transition-transform"
             >
-              Previous
+              {messages.plan.nav.previous}
             </Button>
             <span className="text-sm text-muted-foreground px-4">
               {tabs.findIndex((t) => t.value === activeTab) + 1} of {tabs.length}
@@ -212,7 +214,7 @@ export default function PlanPage() {
               disabled={activeTab === tabs[tabs.length - 1].value}
               className="bg-transparent hover:scale-105 transition-transform"
             >
-              Next
+              {messages.plan.nav.next}
             </Button>
           </div>
         </div>

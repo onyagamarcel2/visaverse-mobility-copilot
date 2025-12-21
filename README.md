@@ -1,8 +1,6 @@
 # VisaVerse Mobility Copilot
 
-Production-quality monorepo with a Next.js App Router frontend and FastAPI backend for visa journey planning. The admin-facing
-control plane now lives in a separate Next.js app (`admin-frontend`) so operator workflows stay isolated from the end-user
-experience.
+Production-quality monorepo with a Next.js App Router frontend and FastAPI backend for visa journey planning. The admin-facing control plane now lives in a separate Next.js app (`admin-frontend`) so operator workflows stay isolated from the end-user experience.
 
 ## Features
 - Onboarding form to capture mobility profile (origin, destination, purpose, dates, sponsor/funds, language).
@@ -20,8 +18,8 @@ kb/                   # Markdown knowledge base
 cases/                # Sample mobility profiles
 ```
 
-## Quickstart
-### Backend
+## Quickstart (dual Next.js apps + FastAPI)
+### Backend (FastAPI on :8000)
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
@@ -30,7 +28,7 @@ cp .env.example .env
 uvicorn app.main:app --reload --port 8000
 ```
 
-### Frontend
+### End-user frontend (App Router on :3000)
 ```bash
 cd frontend
 pnpm install
@@ -38,19 +36,21 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-### Admin frontend
-```
+### Admin frontend (control plane on :3001)
+```bash
 cd admin-frontend
 pnpm install
 cp .env.example .env.local
 pnpm dev -- --port 3001
 ```
-The admin UI is intentionally styled with the same palette as the user app. Point `NEXT_PUBLIC_ADMIN_API_BASE_URL` at the FastAPI
-admin surface (default `http://localhost:8000/admin/api`).
+The admin UI reuses the end-user palette. Point `NEXT_PUBLIC_ADMIN_API_BASE_URL` at `http://localhost:8000/admin/api` (or the Compose service) so moderation + KB publishing reach FastAPI.
 
-By default the browser calls the local Next.js server (`http://localhost:3000`). The Next API routes (`/api/plan`, `/api/chat`) proxy requests to FastAPI using `FASTAPI_BASE_URL`, so backend credentials never leak to the browser.
+#### How traffic flows
+- Browser → `http://localhost:3000` (end-user Next.js). API routes (`/api/plan`, `/api/chat`) act as a BFF and proxy to FastAPI via `FASTAPI_BASE_URL` so secrets stay server-side.
+- Admin operators → `http://localhost:3001` (admin Next.js). Calls go directly to the FastAPI admin router.
+- FastAPI → OpenAI (optional) or deterministic mock mode.
 
-Local fonts are self-hosted via [`@fontsource-variable/inter`](https://fontsource.org/fonts/inter) to ensure builds work without outbound network access. Common commands:
+Local fonts are self-hosted via [`@fontsource-variable/inter`](https://fontsource.org/fonts/inter) so builds work offline. Common commands:
 
 ```bash
 pnpm lint
@@ -62,28 +62,35 @@ pnpm dev
 ```bash
 docker-compose up --build
 ```
-Backend is exposed on `8000`, end-user frontend on `3000`, and the admin app on `3001`. The compose file injects both
-`NEXT_PUBLIC_API_BASE_URL` (browser) and `FASTAPI_BASE_URL` (Next server) automatically.
+Services: backend `8000`, end-user frontend `3000`, admin frontend `3001`. Compose injects:
+- `NEXT_PUBLIC_API_BASE_URL=http://localhost:3000`
+- `FASTAPI_BASE_URL=http://backend:8000`
+- `NEXT_PUBLIC_ADMIN_API_BASE_URL=http://localhost:3001`
 
 ## Environment variables
-- Backend: see `backend/.env.example` for `MOCK_MODE`, `OPENAI_API_KEY`, `ALLOWED_ORIGINS`, etc. New `/api/chat` endpoint respects the same mock/LLM switches.
-- Frontend: copy `frontend/.env.example` and set:
-  - `NEXT_PUBLIC_API_BASE_URL` → where the browser should call the Next.js BFF (usually `http://localhost:3000`).
-  - `FASTAPI_BASE_URL` → internal URL the Next.js API routes use to contact FastAPI (usually `http://localhost:8000` locally or `http://backend:8000` in Docker).
-- Admin frontend: copy `admin-frontend/.env.example` and set `NEXT_PUBLIC_ADMIN_API_BASE_URL` → FastAPI admin base URL
-  (defaults to `http://localhost:8000/admin/api`).
+- Backend: see `backend/.env.example` (`MOCK_MODE`, `OPENAI_API_KEY`, `ALLOWED_ORIGINS`, `MAX_SNIPPETS`). `/api/chat` and `/api/plan` both honor `MOCK_MODE` when no key is present.
+- End-user frontend: set in `frontend/.env.example`:
+  - `NEXT_PUBLIC_API_BASE_URL` → browser calls to the Next.js BFF (default `http://localhost:3000`).
+  - `FASTAPI_BASE_URL` → server-to-server URL the BFF uses (default `http://localhost:8000`, or `http://backend:8000` in Docker Compose).
+- Admin frontend: `NEXT_PUBLIC_ADMIN_API_BASE_URL` (default `http://localhost:8000/admin/api`).
 
-## Sample request
+## Sample requests
 ```bash
 curl -X POST http://localhost:8000/api/plan \
   -H "Content-Type: application/json" \
   -d @cases/profile_student.json
+
+curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"What documents do I need?"}'
 ```
 
-## Smoke testing
-- `scripts/frontend-check.sh` – runs `pnpm lint` + `pnpm build`.
+## Smoke + test commands
+- `scripts/frontend-check.sh` – runs `pnpm lint` + `pnpm build` in the end-user frontend.
 - `frontend/scripts/smoke-plan.mjs` – posts a sample profile to `http://localhost:3000/api/plan` and asserts summary fields.
-- `scripts/dev-smoke.sh` – exercises backend `/api/health`, `/api/plan`, `/api/chat` plus the corresponding Next.js BFF endpoints (requires `curl` + `jq`).
+- `scripts/dev-smoke.sh` – exercises backend `/api/health`, `/api/plan`, `/api/chat` plus the BFF routes (requires `curl` + `jq`).
+- `cd backend && pytest -q` – backend contract tests.
+- `cd admin-frontend && pnpm lint && pnpm build` – admin app health checks.
 
 ## Adding RAG later
-Replace `backend/app/kb.py` retrieval logic with a vector store client (e.g., Chroma) while keeping the `retrieve_snippets` interface.
+Replace `backend/app/kb.py` retrieval logic with a vector store client (e.g., Chroma) while keeping the `retrieve_snippets` interface stable.
