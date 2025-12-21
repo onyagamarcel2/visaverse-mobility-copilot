@@ -11,14 +11,15 @@ import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { ChevronRight, ChevronLeft, Check, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-const STEPS = [
-  { id: 1, title: "Basic Details", description: "Where are you going?" },
-  { id: 2, title: "Travel Info", description: "When and why?" },
-  { id: 3, title: "Additional Details", description: "Financial & other info" },
-]
+import { useI18n } from "@/lib/i18n"
 
 export function OnboardingWizard() {
+  const { t, messages } = useI18n()
+  const STEPS = messages.onboarding.wizard.steps.map((step: any, idx: number) => ({
+    id: idx + 1,
+    title: step.title,
+    description: step.description,
+  }))
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -46,27 +47,27 @@ export function OnboardingWizard() {
     const newErrors: Record<string, string> = {}
 
     if (step === 1) {
-      if (!formData.originCountry) newErrors.originCountry = "Please select your origin country"
-      if (!formData.destinationCountry) newErrors.destinationCountry = "Please select your destination"
+      if (!formData.originCountry) newErrors.originCountry = t("onboarding.wizard.errors.originCountry")
+      if (!formData.destinationCountry) newErrors.destinationCountry = t("onboarding.wizard.errors.destinationCountry")
       if (formData.originCountry === formData.destinationCountry) {
-        newErrors.destinationCountry = "Destination must be different from origin"
+        newErrors.destinationCountry = t("onboarding.wizard.errors.destinationSame")
       }
     }
 
     if (step === 2) {
-      if (!formData.purpose) newErrors.purpose = "Please select your travel purpose"
-      if (!formData.departureDate) newErrors.departureDate = "Please select a departure date"
-      if (!formData.duration) newErrors.duration = "Please enter the duration"
-      if (!formData.passportExpiry) newErrors.passportExpiry = "Please enter your passport expiry date"
+      if (!formData.purpose) newErrors.purpose = t("onboarding.wizard.errors.purpose")
+      if (!formData.departureDate) newErrors.departureDate = t("onboarding.wizard.errors.departureDate")
+      if (!formData.duration) newErrors.duration = t("onboarding.wizard.errors.duration")
+      if (!formData.passportExpiry) newErrors.passportExpiry = t("onboarding.wizard.errors.passportExpiry")
 
       // Check if departure date is in the future
       if (formData.departureDate && new Date(formData.departureDate) < new Date()) {
-        newErrors.departureDate = "Departure date must be in the future"
+        newErrors.departureDate = t("onboarding.wizard.errors.departureFuture")
       }
     }
 
     if (step === 3) {
-      if (!formData.fundsLevel) newErrors.fundsLevel = "Please select your funds level"
+      if (!formData.fundsLevel) newErrors.fundsLevel = t("onboarding.wizard.errors.fundsLevel")
     }
 
     setErrors(newErrors)
@@ -106,7 +107,7 @@ export function OnboardingWizard() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <p className="text-sm font-medium text-muted-foreground" aria-live="polite">
-              Step {currentStep} of {STEPS.length}
+              {`Step ${currentStep} / ${STEPS.length}`}
             </p>
             <h2 className="text-2xl font-semibold text-foreground mt-1" id="step-title">
               {STEPS[currentStep - 1].title}
@@ -165,7 +166,7 @@ export function OnboardingWizard() {
               <>
                 <div className="space-y-2">
                   <Label htmlFor="originCountry">
-                    Origin Country{" "}
+                    {t("onboarding.wizard.labels.originCountry")}{" "}
                     <span className="text-destructive" aria-label="required">
                       *
                     </span>
@@ -177,7 +178,7 @@ export function OnboardingWizard() {
                       aria-invalid={!!errors.originCountry}
                       aria-describedby={errors.originCountry ? "originCountry-error" : undefined}
                     >
-                      <SelectValue placeholder="Select your country" />
+                      <SelectValue placeholder={t("onboarding.wizard.placeholders.originCountry") || ""} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="us">United States</SelectItem>
@@ -201,7 +202,7 @@ export function OnboardingWizard() {
 
                 <div className="space-y-2">
                   <Label htmlFor="destinationCountry">
-                    Destination Country{" "}
+                    {t("onboarding.wizard.labels.destinationCountry")}{" "}
                     <span className="text-destructive" aria-label="required">
                       *
                     </span>
@@ -216,7 +217,7 @@ export function OnboardingWizard() {
                       aria-invalid={!!errors.destinationCountry}
                       aria-describedby={errors.destinationCountry ? "destinationCountry-error" : undefined}
                     >
-                      <SelectValue placeholder="Select destination" />
+                      <SelectValue placeholder={t("onboarding.wizard.placeholders.destinationCountry") || ""} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="us">United States</SelectItem>
@@ -245,7 +246,7 @@ export function OnboardingWizard() {
               <>
                 <div className="space-y-2">
                   <Label htmlFor="purpose">
-                    Purpose of Travel{" "}
+                    {t("onboarding.wizard.labels.purpose")} {" "}
                     <span className="text-destructive" aria-label="required">
                       *
                     </span>
@@ -257,7 +258,7 @@ export function OnboardingWizard() {
                       aria-invalid={!!errors.purpose}
                       aria-describedby={errors.purpose ? "purpose-error" : undefined}
                     >
-                      <SelectValue placeholder="Select purpose" />
+                      <SelectValue placeholder={t("onboarding.wizard.labels.purpose")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="study">Study</SelectItem>
@@ -277,7 +278,7 @@ export function OnboardingWizard() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="departureDate">
-                      Planned Departure Date{" "}
+                      {t("onboarding.wizard.labels.departureDate")} {" "}
                       <span className="text-destructive" aria-label="required">
                         *
                       </span>
@@ -300,7 +301,7 @@ export function OnboardingWizard() {
 
                   <div className="space-y-2">
                     <Label htmlFor="duration">
-                      Duration (months){" "}
+                      {t("onboarding.wizard.labels.duration")} {" "}
                       <span className="text-destructive" aria-label="required">
                         *
                       </span>
@@ -309,7 +310,7 @@ export function OnboardingWizard() {
                       id="duration"
                       type="number"
                       min="1"
-                      placeholder="e.g., 6"
+                      placeholder={t("onboarding.wizard.placeholders.duration")}
                       value={formData.duration}
                       onChange={(e) => updateField("duration", e.target.value)}
                       className={errors.duration ? "border-red-500" : ""}
@@ -326,7 +327,7 @@ export function OnboardingWizard() {
 
                 <div className="space-y-2">
                   <Label htmlFor="passportExpiry">
-                    Passport Expiry Date{" "}
+                    {t("onboarding.wizard.labels.passportExpiry")} {" "}
                     <span className="text-destructive" aria-label="required">
                       *
                     </span>
@@ -354,7 +355,7 @@ export function OnboardingWizard() {
               <>
                 <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-card">
                   <div className="space-y-0.5">
-                    <Label htmlFor="hasSponsor">Do you have a sponsor?</Label>
+                    <Label htmlFor="hasSponsor">{t("onboarding.wizard.labels.hasSponsor")}</Label>
                     <p className="text-sm text-muted-foreground" id="hasSponsor-description">
                       Someone financially supporting your trip
                     </p>
@@ -369,7 +370,7 @@ export function OnboardingWizard() {
 
                 <div className="space-y-2">
                   <Label htmlFor="fundsLevel">
-                    Proof of Funds Level{" "}
+                    {t("onboarding.wizard.labels.fundsLevel")} {" "}
                     <span className="text-destructive" aria-label="required">
                       *
                     </span>
@@ -381,7 +382,7 @@ export function OnboardingWizard() {
                       aria-invalid={!!errors.fundsLevel}
                       aria-describedby={errors.fundsLevel ? "fundsLevel-error" : undefined}
                     >
-                      <SelectValue placeholder="Select level" />
+                      <SelectValue placeholder={t("onboarding.wizard.labels.fundsLevel") || ""} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="low">Low (Basic requirements)</SelectItem>
@@ -397,10 +398,10 @@ export function OnboardingWizard() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="language">Preferred Language</Label>
+                  <Label htmlFor="language">{t("onboarding.wizard.labels.language")}</Label>
                   <Select value={formData.language} onValueChange={(value) => updateField("language", value)}>
                     <SelectTrigger id="language">
-                      <SelectValue />
+                      <SelectValue placeholder={t("onboarding.wizard.labels.language") || ""} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="en">English</SelectItem>
@@ -410,10 +411,10 @@ export function OnboardingWizard() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                  <Label htmlFor="notes">{t("onboarding.wizard.labels.notes")}</Label>
                   <Textarea
                     id="notes"
-                    placeholder="Any special circumstances or questions..."
+                    placeholder={t("onboarding.wizard.placeholders.notes")}
                     value={formData.notes}
                     onChange={(e) => updateField("notes", e.target.value)}
                     rows={4}
@@ -438,12 +439,12 @@ export function OnboardingWizard() {
               aria-label="Go to previous step"
             >
               <ChevronLeft className="w-4 h-4" aria-hidden="true" />
-              Back
+              {t("common.previous")}
             </Button>
 
             {currentStep < STEPS.length ? (
               <Button type="submit" className="gap-2 bg-primary hover:bg-primary/90" aria-label="Go to next step">
-                Next
+                {t("common.next")}
                 <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </Button>
             ) : (
@@ -456,11 +457,11 @@ export function OnboardingWizard() {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                    <span aria-live="polite">Generating Plan...</span>
+                    <span aria-live="polite">{t("common.submit")}</span>
                   </>
                 ) : (
                   <>
-                    Generate Plan
+                    {t("common.submit")}
                     <Check className="w-4 h-4" aria-hidden="true" />
                   </>
                 )}

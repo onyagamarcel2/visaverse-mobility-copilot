@@ -14,6 +14,7 @@ import { SuggestedPrompts } from "@/components/chat/suggested-prompts"
 import { EmptyState } from "@/components/empty-state"
 import { Send, Trash2, MessageSquare } from "lucide-react"
 import { apiClient } from "@/lib/api"
+import { useI18n } from "@/lib/i18n"
 
 interface Message {
   role: "user" | "assistant"
@@ -23,6 +24,7 @@ interface Message {
 
 export default function ChatPage() {
   const router = useRouter()
+  const { t, messages: i18nMessages } = useI18n()
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("visaverse_chat_history")
@@ -37,8 +39,7 @@ export default function ChatPage() {
     return [
       {
         role: "assistant",
-        content:
-          "Hello! I'm your VisaVerse assistant. I can help answer questions about your visa application, required documents, and travel planning. How can I help you today?",
+        content: i18nMessages.chat.initialMessage,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       },
     ]
@@ -106,7 +107,7 @@ export default function ChatPage() {
         ...prev,
         {
           role: "assistant",
-          content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment.",
+          content: i18nMessages.chat.retryError,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ])
@@ -129,8 +130,7 @@ export default function ChatPage() {
   const handleClearChat = () => {
     const initialMessage: Message = {
       role: "assistant",
-      content:
-        "Hello! I'm your VisaVerse assistant. I can help answer questions about your visa application, required documents, and travel planning. How can I help you today?",
+      content: i18nMessages.chat.initialMessage,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     }
     setMessages([initialMessage])
@@ -144,9 +144,9 @@ export default function ChatPage() {
         <div className="flex-1 pt-24 pb-6 px-6 flex items-center justify-center">
           <EmptyState
             icon={MessageSquare}
-            title="Complete Your Profile First"
-            description="To get personalized assistance from your AI copilot, please complete your onboarding profile first."
-            actionLabel="Start Onboarding"
+            title={i18nMessages.chat.emptyTitle}
+            description={i18nMessages.chat.emptyDescription}
+            actionLabel={i18nMessages.chat.emptyAction}
             onAction={() => router.push("/onboarding")}
           />
         </div>
@@ -162,13 +162,18 @@ export default function ChatPage() {
         <div className="max-w-4xl mx-auto h-full flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-semibold text-foreground">Ask Your Copilot</h1>
-              <p className="text-muted-foreground mt-2">Get instant answers to your visa and relocation questions.</p>
+              <h1 className="text-3xl font-semibold text-foreground">{i18nMessages.chat.heroTitle}</h1>
+              <p className="text-muted-foreground mt-2">{i18nMessages.chat.heroSubtitle}</p>
             </div>
             {messages.length > 1 && (
-              <Button variant="outline" size="sm" onClick={handleClearChat} className="gap-2 bg-transparent">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearChat}
+                className="gap-2 bg-transparent focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
+              >
                 <Trash2 className="w-4 h-4" />
-                Clear Chat
+                {t("common.clearChat")}
               </Button>
             )}
           </div>
@@ -199,19 +204,20 @@ export default function ChatPage() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Type your question..."
+                  placeholder={i18nMessages.chat.placeholder}
                   className="flex-1"
                   disabled={isTyping}
                 />
                 <Button
                   onClick={handleSend}
                   disabled={!input.trim() || isTyping}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  aria-label={i18nMessages.chat.placeholder}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
                 >
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Press Enter to send, Shift+Enter for new line</p>
+              <p className="text-xs text-muted-foreground mt-2">{i18nMessages.chat.helper}</p>
             </div>
           </Card>
         </div>

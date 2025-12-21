@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from "@/components/ui/toaster"
 import { CommandPalette } from "@/components/command-palette"
 import { ThemeProvider } from "@/components/theme-provider"
+import { I18nProvider } from "@/lib/i18n"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -48,11 +49,13 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className={`font-sans antialiased`}>
-        <ThemeProvider defaultTheme="system" storageKey="visaverse-theme">
-          {children}
-          <CommandPalette />
-          <Toaster />
-        </ThemeProvider>
+        <I18nProvider>
+          <ThemeProvider defaultTheme="system" storageKey="visaverse-theme">
+            {children}
+            <CommandPalette />
+            <Toaster />
+          </ThemeProvider>
+        </I18nProvider>
         <Analytics />
       </body>
     </html>
