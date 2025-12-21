@@ -53,4 +53,32 @@ def test_chat_endpoint_returns_answer():
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data["answer"], str) and data["answer"].strip() != ""
-    assert "suggested_questions" in data
+    assert set(data.keys()) == {"answer", "sources", "suggested_questions"}
+    assert isinstance(data["sources"], list) and len(data["sources"]) > 0
+    assert isinstance(data["suggested_questions"], list)
+
+
+def test_chat_endpoint_returns_answer_without_profile():
+    payload = {"message": "Do I need an appointment?"}
+    response = client.post("/api/chat", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert set(data.keys()) == {"answer", "sources", "suggested_questions"}
+    assert data["answer"]
+    assert isinstance(data["sources"], list) and len(data["sources"]) > 0
+
+
+def test_chat_endpoint_accepts_history_entries():
+    payload = {
+        "message": "Any other tips?",
+        "profile": _sample_profile(),
+        "history": [
+            {"role": "user", "content": "What about passport validity?"},
+            {"role": "assistant", "content": "Ensure at least 6 months left."},
+        ],
+    }
+    response = client.post("/api/chat", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data["answer"], str) and data["answer"].strip() != ""
+    assert len(data.get("suggested_questions", [])) >= 1
