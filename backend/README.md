@@ -24,8 +24,9 @@ FastAPI service that generates visa preparation plans with strict JSON outputs.
 
 ## Environment variables
 - `MOCK_MODE` (true/false): return deterministic mock plan when true or when no API key is set.
-- `LLM_PROVIDER`: optional model name for OpenAI-compatible endpoint.
-- `OPENAI_API_KEY`: API key for LLM provider (optional when using mock).
+- `OPENROUTER_API_KEY`: preferred API key for OpenRouter (GPT‑4o mini). Keep this in `.env`, never in git.
+- `OPENROUTER_MODEL`, `OPENROUTER_BASE_URL`, `OPENROUTER_REFERRER`, `OPENROUTER_TITLE`: optional overrides for OpenRouter calls.
+- `OPENAI_API_KEY` + `LLM_PROVIDER`: legacy fallback if you want to hit the OpenAI endpoint directly.
 - `ALLOWED_ORIGINS`: comma-separated origins for CORS (default `http://localhost:3000`).
 - `PORT`: port for running uvicorn (default 8000).
 - `MAX_SNIPPETS`: number of KB snippets to attach to the plan (default 5).

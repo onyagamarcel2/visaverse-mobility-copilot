@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Home, FileText, CheckSquare, MessageSquare, Clock, AlertTriangle, Download, Edit, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/lib/i18n"
 
 interface Command {
   id: string
@@ -22,6 +23,7 @@ export function CommandPalette() {
   const [search, setSearch] = useState("")
   const [selectedIndex, setSelectedIndex] = useState(0)
   const router = useRouter()
+  const { messages } = useI18n()
 
   const handleOpenChange = useCallback((nextOpen: boolean) => {
     setOpen(nextOpen)
@@ -34,32 +36,32 @@ export function CommandPalette() {
   const commands: Command[] = [
     {
       id: "home",
-      title: "Go to Home",
-      description: "Navigate to the homepage",
+      title: messages.commandPalette.commands.home.title,
+      description: messages.commandPalette.commands.home.description,
       icon: Home,
       action: () => router.push("/"),
-      keywords: ["home", "landing", "start"],
+      keywords: messages.commandPalette.commands.home.keywords,
     },
     {
       id: "onboarding",
-      title: "Start Onboarding",
-      description: "Begin or edit your profile",
+      title: messages.commandPalette.commands.onboarding.title,
+      description: messages.commandPalette.commands.onboarding.description,
       icon: Edit,
       action: () => router.push("/onboarding"),
-      keywords: ["onboarding", "profile", "edit", "form"],
+      keywords: messages.commandPalette.commands.onboarding.keywords,
     },
     {
       id: "plan",
-      title: "View Plan",
-      description: "See your mobility plan",
+      title: messages.commandPalette.commands.plan.title,
+      description: messages.commandPalette.commands.plan.description,
       icon: FileText,
       action: () => router.push("/plan"),
-      keywords: ["plan", "view", "summary"],
+      keywords: messages.commandPalette.commands.plan.keywords,
     },
     {
       id: "timeline",
-      title: "View Timeline",
-      description: "Check your timeline",
+      title: messages.commandPalette.commands.timeline.title,
+      description: messages.commandPalette.commands.timeline.description,
       icon: Clock,
       action: () => {
         router.push("/plan")
@@ -68,12 +70,12 @@ export function CommandPalette() {
           if (tab instanceof HTMLElement) tab.click()
         }, 100)
       },
-      keywords: ["timeline", "schedule", "dates"],
+      keywords: messages.commandPalette.commands.timeline.keywords,
     },
     {
       id: "checklist",
-      title: "View Checklist",
-      description: "See your action items",
+      title: messages.commandPalette.commands.checklist.title,
+      description: messages.commandPalette.commands.checklist.description,
       icon: CheckSquare,
       action: () => {
         router.push("/plan")
@@ -82,12 +84,12 @@ export function CommandPalette() {
           if (tab instanceof HTMLElement) tab.click()
         }, 100)
       },
-      keywords: ["checklist", "tasks", "todo"],
+      keywords: messages.commandPalette.commands.checklist.keywords,
     },
     {
       id: "documents",
-      title: "View Documents",
-      description: "Check required documents",
+      title: messages.commandPalette.commands.documents.title,
+      description: messages.commandPalette.commands.documents.description,
       icon: FileText,
       action: () => {
         router.push("/plan")
@@ -96,12 +98,12 @@ export function CommandPalette() {
           if (tab instanceof HTMLElement) tab.click()
         }, 100)
       },
-      keywords: ["documents", "files", "paperwork"],
+      keywords: messages.commandPalette.commands.documents.keywords,
     },
     {
       id: "risks",
-      title: "View Risks",
-      description: "See potential risks",
+      title: messages.commandPalette.commands.risks.title,
+      description: messages.commandPalette.commands.risks.description,
       icon: AlertTriangle,
       action: () => {
         router.push("/plan")
@@ -110,26 +112,26 @@ export function CommandPalette() {
           if (tab instanceof HTMLElement) tab.click()
         }, 100)
       },
-      keywords: ["risks", "warnings", "issues"],
+      keywords: messages.commandPalette.commands.risks.keywords,
     },
     {
       id: "chat",
-      title: "Open Chat",
-      description: "Chat with AI copilot",
+      title: messages.commandPalette.commands.chat.title,
+      description: messages.commandPalette.commands.chat.description,
       icon: MessageSquare,
       action: () => router.push("/chat"),
-      keywords: ["chat", "ai", "copilot", "help"],
+      keywords: messages.commandPalette.commands.chat.keywords,
     },
     {
       id: "export",
-      title: "Export Plan",
-      description: "Download your plan as PDF",
+      title: messages.commandPalette.commands.export.title,
+      description: messages.commandPalette.commands.export.description,
       icon: Download,
       action: () => {
         const exportBtn = document.querySelector('[data-action="export"]')
         if (exportBtn instanceof HTMLElement) exportBtn.click()
       },
-      keywords: ["export", "download", "pdf", "save"],
+      keywords: messages.commandPalette.commands.export.keywords,
     },
   ]
 
@@ -176,8 +178,8 @@ export function CommandPalette() {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl p-0 gap-0">
         <DialogHeader className="px-4 pt-4 pb-0">
-          <DialogTitle className="sr-only">Command Palette</DialogTitle>
-          <DialogDescription className="sr-only">Search and navigate quickly through the app</DialogDescription>
+          <DialogTitle className="sr-only">{messages.commandPalette.title}</DialogTitle>
+          <DialogDescription className="sr-only">{messages.commandPalette.description}</DialogDescription>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -186,7 +188,7 @@ export function CommandPalette() {
                 setSearch(e.target.value)
                 setSelectedIndex(0)
               }}
-              placeholder="Search commands..."
+              placeholder={messages.commandPalette.placeholder}
               className="pl-10 border-0 focus-visible:ring-0 text-base"
               autoFocus
             />
@@ -195,7 +197,7 @@ export function CommandPalette() {
 
         <ScrollArea className="max-h-[400px] px-2 py-2">
           {filteredCommands.length === 0 ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">No commands found</div>
+            <div className="py-12 text-center text-sm text-muted-foreground">{messages.commandPalette.empty}</div>
           ) : (
             <div className="space-y-1">
               {filteredCommands.map((command, index) => {

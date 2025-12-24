@@ -1,0 +1,91 @@
+Protocole de demo - VisaVerse Mobility Copilot
+
+But de l'application
+VisaVerse aide les utilisateurs a preparer un dossier de visa et de mobilite internationale.
+L'app genere un plan personnalise (timeline, checklist, documents, risques) et propose un chat IA pour les questions.
+
+Objectif
+Montrer le parcours utilisateur complet: onboarding -> plan -> checklist -> chat -> export.
+Verifier que la langue, les notifications et le chat sont coherents.
+
+Pre-requis
+1) Backend lance sur http://localhost:8000
+   - uvicorn app.main:app --reload
+2) Frontend lance sur http://localhost:3000
+   - pnpm dev (dans frontend)
+
+Etape 1 - Accueil et langue
+Action:
+- Ouvrir http://localhost:3000
+- Changer la langue EN/FR via le selecteur dans la navbar.
+Observation attendue:
+- Tous les textes visibles basculent de langue.
+- Le bouton principal change (Get Started / Commencer).
+Resultat attendu:
+- La langue UI est coherente et stable apres refresh.
+
+Etape 2 - Onboarding (formulaire)
+Action:
+- Aller sur /onboarding
+- Remplir le formulaire (pays, motif, dates, fonds, langue).
+- Lancer "Generer le plan".
+Observation attendue:
+- Validations si un champ est vide ou invalide.
+- Loader visible pendant la generation.
+Resultat attendu:
+- Redirection vers /plan avec un plan genere.
+
+Etape 3 - Plan (resume + onglets)
+Action:
+- Sur /plan, parcourir les onglets Summary/Timeline/Checklist/Documents/Risks.
+Observation attendue:
+- Donnees affichees sans erreur.
+- Les textes et titres sont dans la langue choisie.
+Resultat attendu:
+- Le plan est coherent et complet.
+
+Etape 4 - Checklist (persistance)
+Action:
+- Cocher quelques elements dans Checklist.
+- Rafraichir la page.
+Observation attendue:
+- Les cases cochees restent cochees apres refresh.
+Resultat attendu:
+- Persistance des actions utilisateur.
+
+Etape 5 - Chat (etat et langue)
+Action:
+- Aller sur /chat.
+- Envoyer une question simple.
+Observation attendue:
+- Badge "Envoi..." pendant la requete.
+- Reponse dans la langue selectionnee.
+- En cas d'erreur, bouton "Reessayer" visible.
+Resultat attendu:
+- Chat repond correctement et gere les erreurs.
+
+Etape 6 - Notifications
+Action:
+- Cliquer sur l'icone cloche.
+- Marquer une notification comme lue.
+- Rafraichir la page.
+Observation attendue:
+- Les notifications sont traduites.
+- L'etat lu/non lu est conserve apres refresh.
+Resultat attendu:
+- Persistance des notifications.
+
+Etape 7 - Export PDF
+Action:
+- Sur /plan, cliquer "Exporter en PDF".
+Observation attendue:
+- Fenetre d'impression s'ouvre.
+- Les textes exportes sont dans la langue choisie.
+Resultat attendu:
+- Export PDF possible via la boite de dialogue du navigateur.
+
+Conclusion attendue
+- Parcours complet fluide.
+- Generation plan et chat en langue selectionnee.
+- Etats persistants (checklist, notifications).
+- Export fonctionnel.

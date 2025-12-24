@@ -11,6 +11,7 @@ from app.main import app
 
 settings.MOCK_MODE = True
 settings.OPENAI_API_KEY = None
+settings.OPENROUTER_API_KEY = None
 
 client = TestClient(app)
 

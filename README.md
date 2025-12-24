@@ -68,7 +68,7 @@ Services: backend `8000`, end-user frontend `3000`, admin frontend `3001`. Compo
 - `NEXT_PUBLIC_ADMIN_API_BASE_URL=http://localhost:3001`
 
 ## Environment variables
-- Backend: see `backend/.env.example` (`MOCK_MODE`, `OPENAI_API_KEY`, `ALLOWED_ORIGINS`, `MAX_SNIPPETS`). `/api/chat` and `/api/plan` both honor `MOCK_MODE` when no key is present.
+- Backend: see `backend/.env.example` (`MOCK_MODE`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `ALLOWED_ORIGINS`, `MAX_SNIPPETS`). `/api/chat` and `/api/plan` both honor `MOCK_MODE` when no key is present.
 - End-user frontend: set in `frontend/.env.example`:
   - `NEXT_PUBLIC_API_BASE_URL` → browser calls to the Next.js BFF (default `http://localhost:3000`).
   - `FASTAPI_BASE_URL` → server-to-server URL the BFF uses (default `http://localhost:8000`, or `http://backend:8000` in Docker Compose).
@@ -84,6 +84,13 @@ curl -X POST http://localhost:3000/api/chat \
   -H "Content-Type: application/json" \
   -d '{"message":"What documents do I need?"}'
 ```
+
+## Type contracts (backend → frontend)
+Pydantic schemas are the source of truth. Generate synchronized TypeScript interfaces for the frontend with:
+```bash
+python backend/scripts/generate_ts_contracts.py
+```
+CI/pytest runs `--check` to ensure `frontend/generated/backend-contracts.ts` stays fresh.
 
 ## Smoke + test commands
 - `scripts/frontend-check.sh` – runs `pnpm lint` + `pnpm build` in the end-user frontend.

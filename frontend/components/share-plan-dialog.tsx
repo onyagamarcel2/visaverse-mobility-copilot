@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Copy, Check, Mail } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useI18n } from "@/lib/i18n"
 
 interface SharePlanDialogProps {
   open: boolean
@@ -27,6 +28,7 @@ export function SharePlanDialog({ open, onOpenChange }: SharePlanDialogProps) {
   const [password, setPassword] = useState("")
   const [email, setEmail] = useState("")
   const { toast } = useToast()
+  const { messages } = useI18n()
   const linkId = useId().replace(/:/g, "")
 
   // Generate a mock shareable link
@@ -36,8 +38,8 @@ export function SharePlanDialog({ open, onOpenChange }: SharePlanDialogProps) {
     navigator.clipboard.writeText(shareableLink)
     setCopied(true)
     toast({
-      title: "Link Copied",
-      description: "The shareable link has been copied to your clipboard.",
+      title: messages.share.copyToastTitle,
+      description: messages.share.copyToastDescription,
     })
     setTimeout(() => setCopied(false), 2000)
   }
@@ -45,16 +47,16 @@ export function SharePlanDialog({ open, onOpenChange }: SharePlanDialogProps) {
   const handleEmailShare = () => {
     if (!email) {
       toast({
-        title: "Email Required",
-        description: "Please enter an email address.",
+        title: messages.share.emailRequiredTitle,
+        description: messages.share.emailRequiredDescription,
         variant: "destructive",
       })
       return
     }
 
     toast({
-      title: "Email Sent",
-      description: `Your plan has been shared with ${email}`,
+      title: messages.share.emailSentTitle,
+      description: messages.share.emailSentDescription.replace("{email}", email),
     })
     setEmail("")
     onOpenChange(false)
@@ -64,14 +66,14 @@ export function SharePlanDialog({ open, onOpenChange }: SharePlanDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Share Your Plan</DialogTitle>
-          <DialogDescription>Share your mobility plan with family, friends, or colleagues.</DialogDescription>
+          <DialogTitle>{messages.share.title}</DialogTitle>
+          <DialogDescription>{messages.share.description}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Shareable Link */}
           <div className="space-y-2">
-            <Label>Shareable Link</Label>
+            <Label>{messages.share.linkLabel}</Label>
             <div className="flex gap-2">
               <Input value={shareableLink} readOnly className="flex-1" />
               <Button size="icon" variant="outline" onClick={handleCopyLink}>
@@ -91,17 +93,17 @@ export function SharePlanDialog({ open, onOpenChange }: SharePlanDialogProps) {
               htmlFor="password"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              Password protect this link
+              {messages.share.passwordProtect}
             </label>
           </div>
 
           {passwordProtected && (
             <div className="space-y-2">
-              <Label htmlFor="share-password">Password</Label>
+              <Label htmlFor="share-password">{messages.share.passwordLabel}</Label>
               <Input
                 id="share-password"
                 type="password"
-                placeholder="Enter password"
+                placeholder={messages.share.passwordPlaceholder}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -110,12 +112,12 @@ export function SharePlanDialog({ open, onOpenChange }: SharePlanDialogProps) {
 
           {/* Email Sharing */}
           <div className="space-y-2 pt-4 border-t">
-            <Label htmlFor="email">Or share via email</Label>
+            <Label htmlFor="email">{messages.share.emailLabel}</Label>
             <div className="flex gap-2">
               <Input
                 id="email"
                 type="email"
-                placeholder="colleague@example.com"
+                placeholder={messages.share.emailPlaceholder}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -128,7 +130,7 @@ export function SharePlanDialog({ open, onOpenChange }: SharePlanDialogProps) {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
+            {messages.share.close}
           </Button>
         </DialogFooter>
       </DialogContent>

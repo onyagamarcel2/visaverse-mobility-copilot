@@ -60,8 +60,21 @@ class APIClient {
   private baseURL: string
 
   constructor() {
-    // Use environment variable or default to Next.js dev server
-    this.baseURL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000"
+    this.baseURL = APIClient.resolveBaseUrl()
+  }
+
+  private static normalizeBaseUrl(url?: string | null) {
+    if (!url) return ""
+    return url.replace(/\/+$/, "")
+  }
+
+  private static resolveBaseUrl() {
+    const envBase = APIClient.normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL)
+    if (envBase) return envBase
+    if (typeof window !== "undefined") {
+      return APIClient.normalizeBaseUrl(window.location.origin)
+    }
+    return "http://localhost:3000"
   }
 
   async generatePlan(profileData: ProfileData): Promise<PlanResponse> {

@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
+import { useI18n } from "@/lib/i18n"
 
 interface ProgressChartProps {
   completed: number
@@ -11,12 +12,13 @@ interface ProgressChartProps {
 }
 
 export function ProgressChart({ completed, total, title, description }: ProgressChartProps) {
+  const { messages } = useI18n()
   const percentage = Math.round((completed / total) * 100)
   const remaining = total - completed
 
   const data = [
-    { name: "Completed", value: completed, color: "hsl(var(--primary))" },
-    { name: "Remaining", value: remaining, color: "hsl(var(--muted))" },
+    { name: messages.charts.completed, value: completed, color: "hsl(var(--primary))" },
+    { name: messages.charts.remaining, value: remaining, color: "hsl(var(--muted))" },
   ]
 
   return (
@@ -40,16 +42,18 @@ export function ProgressChart({ completed, total, title, description }: Progress
         <div className="flex-1">
           <div className="text-3xl font-bold text-primary mb-1">{percentage}%</div>
           <p className="text-sm text-muted-foreground">
-            {completed} of {total} items completed
+            {messages.charts.itemsCompleted
+              .replace("{completed}", String(completed))
+              .replace("{total}", String(total))}
           </p>
           <div className="flex gap-4 mt-3">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-primary" />
-              <span className="text-xs text-muted-foreground">Completed</span>
+              <span className="text-xs text-muted-foreground">{messages.charts.completed}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-muted" />
-              <span className="text-xs text-muted-foreground">Remaining</span>
+              <span className="text-xs text-muted-foreground">{messages.charts.remaining}</span>
             </div>
           </div>
         </div>

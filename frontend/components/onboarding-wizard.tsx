@@ -1,26 +1,42 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
-import { ChevronRight, ChevronLeft, Check, Loader2 } from "lucide-react"
+import { ChevronRight, ChevronLeft, Check, Loader2, CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useI18n } from "@/lib/i18n"
+import { apiClient } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
+import { useAppStore } from "@/lib/store"
+
+const PURPOSE_OPTIONS = ["study", "work", "tourism", "family", "business"] as const
+const FUNDS_OPTIONS = ["low", "medium", "high"] as const
+const LANGUAGE_OPTIONS = ["en", "fr"] as const
 
 export function OnboardingWizard() {
-  const { t, messages } = useI18n()
+  const { t, messages, locale } = useI18n()
   const STEPS = messages.onboarding.wizard.steps.map((step: any, idx: number) => ({
     id: idx + 1,
     title: step.title,
     description: step.description,
   }))
+  const countryOptions = messages.onboarding.options.countries
+  const purposeOptions = messages.onboarding.options.purposes
+  const fundsOptions = messages.onboarding.options.funds
+  const languageOptions = messages.onboarding.options.languages
   const router = useRouter()
+  const { toast } = useToast()
+  const setProfile = useAppStore((state) => state.setProfile)
+  const setPlan = useAppStore((state) => state.setPlan)
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -33,22 +49,38 @@ export function OnboardingWizard() {
     passportExpiry: "",
     hasSponsor: false,
     fundsLevel: "",
-    language: "en",
+    language: locale,
     notes: "",
   })
+  const [languageTouched, setLanguageTouched] = useState(false)
 
   const updateField = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     // Clear error when user starts typing
     setErrors((prev) => ({ ...prev, [field]: "" }))
+    if (field === "language") {
+      setLanguageTouched(true)
+    }
   }
+  useEffect(() => {
+    if (!languageTouched) {
+      setFormData((prev) => ({ ...prev, language: locale }))
+    }
+  }, [locale, languageTouched])
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {}
+    const countryValues = new Set(countryOptions.map((country: { value: string }) => country.value))
 
     if (step === 1) {
       if (!formData.originCountry) newErrors.originCountry = t("onboarding.wizard.errors.originCountry")
+      if (formData.originCountry && !countryValues.has(formData.originCountry)) {
+        newErrors.originCountry = t("onboarding.wizard.errors.originCountryInvalid")
+      }
       if (!formData.destinationCountry) newErrors.destinationCountry = t("onboarding.wizard.errors.destinationCountry")
+      if (formData.destinationCountry && !countryValues.has(formData.destinationCountry)) {
+        newErrors.destinationCountry = t("onboarding.wizard.errors.destinationCountryInvalid")
+      }
       if (formData.originCountry === formData.destinationCountry) {
         newErrors.destinationCountry = t("onboarding.wizard.errors.destinationSame")
       }
@@ -56,6 +88,9 @@ export function OnboardingWizard() {
 
     if (step === 2) {
       if (!formData.purpose) newErrors.purpose = t("onboarding.wizard.errors.purpose")
+      if (formData.purpose && !PURPOSE_OPTIONS.includes(formData.purpose as (typeof PURPOSE_OPTIONS)[number])) {
+        newErrors.purpose = t("onboarding.wizard.errors.purposeInvalid")
+      }
       if (!formData.departureDate) newErrors.departureDate = t("onboarding.wizard.errors.departureDate")
       if (!formData.duration) newErrors.duration = t("onboarding.wizard.errors.duration")
       if (!formData.passportExpiry) newErrors.passportExpiry = t("onboarding.wizard.errors.passportExpiry")
@@ -64,10 +99,29 @@ export function OnboardingWizard() {
       if (formData.departureDate && new Date(formData.departureDate) < new Date()) {
         newErrors.departureDate = t("onboarding.wizard.errors.departureFuture")
       }
+
+      const durationValue = Number(formData.duration)
+      if (formData.duration && (!Number.isFinite(durationValue) || durationValue <= 0)) {
+        newErrors.duration = t("onboarding.wizard.errors.durationInvalid")
+      }
+
+      if (formData.departureDate && formData.passportExpiry) {
+        const departure = new Date(formData.departureDate)
+        const expiry = new Date(formData.passportExpiry)
+        if (expiry <= departure) {
+          newErrors.passportExpiry = t("onboarding.wizard.errors.passportBeforeDeparture")
+        }
+      }
     }
 
     if (step === 3) {
       if (!formData.fundsLevel) newErrors.fundsLevel = t("onboarding.wizard.errors.fundsLevel")
+      if (formData.fundsLevel && !FUNDS_OPTIONS.includes(formData.fundsLevel as (typeof FUNDS_OPTIONS)[number])) {
+        newErrors.fundsLevel = t("onboarding.wizard.errors.fundsLevelInvalid")
+      }
+      if (formData.language && !LANGUAGE_OPTIONS.includes(formData.language as (typeof LANGUAGE_OPTIONS)[number])) {
+        newErrors.language = t("onboarding.wizard.errors.languageInvalid")
+      }
     }
 
     setErrors(newErrors)
@@ -84,21 +138,57 @@ export function OnboardingWizard() {
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
+  const profilePayload = useMemo(
+    () => ({
+      ...formData,
+      duration: formData.duration.trim(),
+      notes: formData.notes.trim(),
+    }),
+    [formData],
+  )
+
   const handleSubmit = async () => {
     if (!validateStep(currentStep)) return
 
     setLoading(true)
-
-    // Save to localStorage (and sessionStorage as draft)
-    localStorage.setItem("visaverse_profile", JSON.stringify(formData))
     sessionStorage.setItem("visaverse_draft", JSON.stringify(formData))
 
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    router.push("/plan")
+    try {
+      const plan = await apiClient.generatePlan(profilePayload)
+      setProfile(profilePayload)
+      setPlan(plan)
+      toast({
+        title: t("onboarding.wizard.success.title"),
+        description: t("onboarding.wizard.success.description"),
+      })
+      router.push("/plan")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("onboarding.wizard.errors.generic")
+      toast({
+        title: t("onboarding.wizard.errors.submitTitle"),
+        description: message,
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const progress = (currentStep / STEPS.length) * 100
+  const today = useMemo(() => new Date(), [])
+  const localeTag = locale === "fr" ? "fr-FR" : "en-US"
+  const formatDate = (value?: string) => {
+    if (!value) return ""
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ""
+    return date.toLocaleDateString(localeTag, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  }
+  const selectedDeparture = formData.departureDate ? new Date(formData.departureDate) : undefined
+  const selectedPassportExpiry = formData.passportExpiry ? new Date(formData.passportExpiry) : undefined
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -181,16 +271,11 @@ export function OnboardingWizard() {
                       <SelectValue placeholder={t("onboarding.wizard.placeholders.originCountry") || ""} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="us">United States</SelectItem>
-                      <SelectItem value="uk">United Kingdom</SelectItem>
-                      <SelectItem value="ca">Canada</SelectItem>
-                      <SelectItem value="au">Australia</SelectItem>
-                      <SelectItem value="de">Germany</SelectItem>
-                      <SelectItem value="fr">France</SelectItem>
-                      <SelectItem value="in">India</SelectItem>
-                      <SelectItem value="cn">China</SelectItem>
-                      <SelectItem value="jp">Japan</SelectItem>
-                      <SelectItem value="br">Brazil</SelectItem>
+                      {countryOptions.map((country: { value: string; label: string }) => (
+                        <SelectItem key={country.value} value={country.value}>
+                          {country.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {errors.originCountry && (
@@ -220,16 +305,11 @@ export function OnboardingWizard() {
                       <SelectValue placeholder={t("onboarding.wizard.placeholders.destinationCountry") || ""} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="us">United States</SelectItem>
-                      <SelectItem value="uk">United Kingdom</SelectItem>
-                      <SelectItem value="ca">Canada</SelectItem>
-                      <SelectItem value="au">Australia</SelectItem>
-                      <SelectItem value="de">Germany</SelectItem>
-                      <SelectItem value="fr">France</SelectItem>
-                      <SelectItem value="in">India</SelectItem>
-                      <SelectItem value="cn">China</SelectItem>
-                      <SelectItem value="jp">Japan</SelectItem>
-                      <SelectItem value="br">Brazil</SelectItem>
+                      {countryOptions.map((country: { value: string; label: string }) => (
+                        <SelectItem key={country.value} value={country.value}>
+                          {country.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {errors.destinationCountry && (
@@ -261,11 +341,11 @@ export function OnboardingWizard() {
                       <SelectValue placeholder={t("onboarding.wizard.labels.purpose")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="study">Study</SelectItem>
-                      <SelectItem value="work">Work</SelectItem>
-                      <SelectItem value="tourism">Tourism</SelectItem>
-                      <SelectItem value="family">Family</SelectItem>
-                      <SelectItem value="business">Business</SelectItem>
+                      {purposeOptions.map((purpose: { value: string; label: string }) => (
+                        <SelectItem key={purpose.value} value={purpose.value}>
+                          {purpose.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {errors.purpose && (
@@ -283,15 +363,39 @@ export function OnboardingWizard() {
                         *
                       </span>
                     </Label>
-                    <Input
-                      id="departureDate"
-                      type="date"
-                      value={formData.departureDate}
-                      onChange={(e) => updateField("departureDate", e.target.value)}
-                      className={errors.departureDate ? "border-red-500" : ""}
-                      aria-invalid={!!errors.departureDate}
-                      aria-describedby={errors.departureDate ? "departureDate-error" : undefined}
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-between text-left font-normal",
+                            !formData.departureDate && "text-muted-foreground",
+                            errors.departureDate && "border-red-500",
+                          )}
+                          aria-invalid={!!errors.departureDate}
+                          aria-describedby={errors.departureDate ? "departureDate-error" : undefined}
+                        >
+                          <span>
+                            {formData.departureDate
+                              ? formatDate(formData.departureDate)
+                              : t("onboarding.wizard.labels.departureDate")}
+                          </span>
+                          <CalendarIcon className="h-4 w-4 opacity-70" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDeparture}
+                          onSelect={(date) =>
+                            updateField("departureDate", date ? date.toISOString().slice(0, 10) : "")
+                          }
+                          disabled={{ before: today }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                     {errors.departureDate && (
                       <p className="text-sm text-red-500" id="departureDate-error" role="alert">
                         {errors.departureDate}
@@ -332,15 +436,39 @@ export function OnboardingWizard() {
                       *
                     </span>
                   </Label>
-                  <Input
-                    id="passportExpiry"
-                    type="date"
-                    value={formData.passportExpiry}
-                    onChange={(e) => updateField("passportExpiry", e.target.value)}
-                    className={errors.passportExpiry ? "border-red-500" : ""}
-                    aria-invalid={!!errors.passportExpiry}
-                    aria-describedby={errors.passportExpiry ? "passportExpiry-error" : undefined}
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-between text-left font-normal",
+                          !formData.passportExpiry && "text-muted-foreground",
+                          errors.passportExpiry && "border-red-500",
+                        )}
+                        aria-invalid={!!errors.passportExpiry}
+                        aria-describedby={errors.passportExpiry ? "passportExpiry-error" : undefined}
+                      >
+                        <span>
+                          {formData.passportExpiry
+                            ? formatDate(formData.passportExpiry)
+                            : t("onboarding.wizard.labels.passportExpiry")}
+                        </span>
+                        <CalendarIcon className="h-4 w-4 opacity-70" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedPassportExpiry}
+                        onSelect={(date) =>
+                          updateField("passportExpiry", date ? date.toISOString().slice(0, 10) : "")
+                        }
+                        disabled={{ before: today }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                   {errors.passportExpiry && (
                     <p className="text-sm text-red-500" id="passportExpiry-error" role="alert">
                       {errors.passportExpiry}
@@ -385,9 +513,11 @@ export function OnboardingWizard() {
                       <SelectValue placeholder={t("onboarding.wizard.labels.fundsLevel") || ""} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Low (Basic requirements)</SelectItem>
-                      <SelectItem value="medium">Medium (Comfortable)</SelectItem>
-                      <SelectItem value="high">High (Abundant)</SelectItem>
+                      {fundsOptions.map((fund: { value: string; label: string }) => (
+                        <SelectItem key={fund.value} value={fund.value}>
+                          {fund.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {errors.fundsLevel && (
@@ -404,8 +534,11 @@ export function OnboardingWizard() {
                       <SelectValue placeholder={t("onboarding.wizard.labels.language") || ""} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="fr">French</SelectItem>
+                      {languageOptions.map((language: { value: string; label: string }) => (
+                        <SelectItem key={language.value} value={language.value}>
+                          {language.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

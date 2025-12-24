@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useI18n } from "@/lib/i18n"
 
 interface TimelineGanttProps {
   milestones: Array<{
@@ -13,6 +14,7 @@ interface TimelineGanttProps {
 }
 
 export function TimelineGantt({ milestones }: TimelineGanttProps) {
+  const { messages } = useI18n()
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
@@ -27,11 +29,11 @@ export function TimelineGantt({ milestones }: TimelineGanttProps) {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "completed":
-        return "Completed"
+        return messages.plan.timeline.statusCompleted
       case "in-progress":
-        return "In Progress"
+        return messages.plan.timeline.statusInProgress
       default:
-        return "Pending"
+        return messages.plan.timeline.statusPending
     }
   }
 
@@ -53,7 +55,7 @@ export function TimelineGantt({ milestones }: TimelineGanttProps) {
 
   return (
     <Card className="p-6 border-border">
-      <h3 className="font-semibold text-foreground mb-6">Timeline Visualization</h3>
+      <h3 className="font-semibold text-foreground mb-6">{messages.plan.timeline.ganttTitle}</h3>
 
       <div className="space-y-6">
         {milestones.map((milestone, index) => (
@@ -78,15 +80,15 @@ export function TimelineGantt({ milestones }: TimelineGanttProps) {
       <div className="flex gap-6 mt-6 pt-4 border-t border-border">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-success" />
-          <span className="text-xs text-muted-foreground">Completed</span>
+          <span className="text-xs text-muted-foreground">{messages.plan.timeline.statusCompleted}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-accent" />
-          <span className="text-xs text-muted-foreground">In Progress</span>
+          <span className="text-xs text-muted-foreground">{messages.plan.timeline.statusInProgress}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-muted" />
-          <span className="text-xs text-muted-foreground">Pending</span>
+          <span className="text-xs text-muted-foreground">{messages.plan.timeline.statusPending}</span>
         </div>
       </div>
     </Card>

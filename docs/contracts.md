@@ -21,7 +21,7 @@
 ## 4. Environment variables
 - `NEXT_PUBLIC_API_BASE_URL` – browser target for calling the Next.js BFF (`/api/plan`, `/api/chat`). Defaults to `http://localhost:3000` for local dev.
 - `FASTAPI_BASE_URL` – server-side target used inside the BFF to reach FastAPI (e.g., `http://localhost:8000` locally, `http://backend:8000` in Docker).
-- Backend `.env` still controls `MOCK_MODE`, `OPENAI_API_KEY`, and `MAX_SNIPPETS`, affecting both `/api/plan` and `/api/chat`.
+- Backend `.env` still controls `MOCK_MODE`, `OPENROUTER_API_KEY` (or legacy `OPENAI_API_KEY`), and `MAX_SNIPPETS`, affecting both `/api/plan` and `/api/chat`.
 
 ## 5. Smoke coverage
 - `scripts/dev-smoke.sh` covers backend and BFF health/plan/chat flows with representative payloads.
